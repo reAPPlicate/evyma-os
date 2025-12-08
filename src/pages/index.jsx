@@ -1,23 +1,15 @@
 import Layout from "./Layout.jsx";
 import Home from "./Home";
-import Auth from "./Auth";
 import Goals from "./Goals";
 import Habits from "./Habits";
-import ProtectedRoute, { PublicRoute } from "../components/ProtectedRoute";
-import { BrowserRouter as Router, Route, Routes} from 'react-router-dom';
+import ProtectedRoute from "../components/ProtectedRoute";
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 
 export default function Pages() {
     return (
         <Router>
             <Routes>
-                {/* Public routes */}
-                <Route path="/auth" element={
-                    <PublicRoute>
-                        <Auth />
-                    </PublicRoute>
-                } />
-
-                {/* Protected routes */}
+                {/* Protected routes - Base44 handles auth redirects automatically */}
                 <Route path="/" element={
                     <ProtectedRoute>
                         <Layout>

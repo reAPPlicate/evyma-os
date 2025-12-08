@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { GripVertical, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -28,7 +29,7 @@ const DEFAULT_APPS = [
 /**
  * AppLauncher - Grid of app icons with drag-and-drop reordering
  */
-export default function AppLauncher({ 
+export default function AppLauncher({
   accentColor = '#3B82F6',
   columns = 4,
   apps,
@@ -38,6 +39,7 @@ export default function AppLauncher({
   onOpenSettings,
   onOpenTimer,
 }) {
+  const navigate = useNavigate();
   const [localApps, setLocalApps] = useState(apps || DEFAULT_APPS);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -71,25 +73,26 @@ export default function AppLauncher({
 
   const handleAppClick = (app) => {
     if (isEditMode) return;
-    
+
     // Handle settings app specially
     if (app.isSettings && onOpenSettings) {
       onOpenSettings();
       return;
     }
-    
+
     // Handle timer app
     if (app.isTimer && onOpenTimer) {
       onOpenTimer();
       return;
     }
-    
-    // Navigate to route
+
+    // Navigate to route using React Router (SPA navigation)
     if (app.route) {
-      window.location.href = createPageUrl(app.route);
+      const url = createPageUrl(app.route);
+      navigate(url);
       return;
     }
-    
+
     console.log('Navigate to:', app.route);
   };
 
