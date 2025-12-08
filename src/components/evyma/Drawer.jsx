@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { Separator } from '@/components/ui/separator';
 
 /**
@@ -13,6 +13,7 @@ export default function Drawer({
   onClose, 
   side = "right", 
   title, 
+  headerExtra,
   children 
 }) {
   const drawerRef = useRef(null);
@@ -51,22 +52,35 @@ export default function Drawer({
   const getSlideClasses = () => {
     switch (side) {
       case "left":
-        return `left-0 top-0 bottom-0 w-[85vw] max-w-[360px] ${isOpen ? 'translate-x-0' : '-translate-x-full'}`;
+        return `left-0 top-0 bottom-0 
+          w-[90vw] sm:w-[70vw] lg:w-[45vw] 
+          max-w-[95vw] sm:max-w-[480px] lg:max-w-[540px]
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'}`;
       case "right":
-        return `right-0 top-0 bottom-0 w-[85vw] max-w-[360px] ${isOpen ? 'translate-x-0' : 'translate-x-full'}`;
+        return `right-0 top-0 bottom-0 
+          w-[90vw] sm:w-[70vw] lg:w-[45vw] 
+          max-w-[95vw] sm:max-w-[480px] lg:max-w-[540px]
+          ${isOpen ? 'translate-x-0' : 'translate-x-full'}`;
       case "top":
-        return `top-0 left-0 right-0 max-h-[85vh] ${isOpen ? 'translate-y-0' : '-translate-y-full'}`;
+        return `top-0 left-1/2 -translate-x-1/2
+          w-[90vw] sm:w-[70vw] lg:w-[45vw] 
+          max-w-[95vw] sm:max-w-[480px] lg:max-w-[540px]
+          max-h-[85vh] rounded-b-3xl
+          ${isOpen ? 'translate-y-0' : '-translate-y-full'}`;
       default:
-        return `right-0 top-0 bottom-0 w-[85vw] max-w-[360px] ${isOpen ? 'translate-x-0' : 'translate-x-full'}`;
+        return `right-0 top-0 bottom-0 
+          w-[90vw] sm:w-[70vw] lg:w-[45vw] 
+          max-w-[95vw] sm:max-w-[480px] lg:max-w-[540px]
+          ${isOpen ? 'translate-x-0' : 'translate-x-full'}`;
     }
   };
 
   const getBorderClass = () => {
     switch (side) {
-      case "left": return "border-r border-white/[0.08]";
-      case "right": return "border-l border-white/[0.08]";
-      case "top": return "border-b border-white/[0.08] rounded-b-3xl";
-      default: return "border-l border-white/[0.08]";
+      case "left": return "border-r border-white/[0.08] rounded-r-3xl sm:rounded-r-2xl";
+      case "right": return "border-l border-white/[0.08] rounded-l-3xl sm:rounded-l-2xl";
+      case "top": return "border-b border-white/[0.08]";
+      default: return "border-l border-white/[0.08] rounded-l-3xl sm:rounded-l-2xl";
     }
   };
 
@@ -104,12 +118,15 @@ export default function Drawer({
       >
         {/* Header */}
         <header className="flex items-center justify-between p-4 sm:p-5">
-          <h2 
-            id="drawer-title" 
-            className="text-lg font-semibold text-white tracking-tight"
-          >
-            {title}
-          </h2>
+          <div className="flex items-center gap-3">
+            <h2 
+              id="drawer-title" 
+              className="text-lg font-semibold text-white tracking-tight"
+            >
+              {title}
+            </h2>
+            {headerExtra}
+          </div>
           <Button
             ref={closeButtonRef}
             variant="ghost"
@@ -131,11 +148,11 @@ export default function Drawer({
         <Separator className="bg-white/[0.08]" />
         
         {/* Content */}
-        <ScrollArea className="flex-1">
-          <div className="p-4 sm:p-5">
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-4 sm:p-5 pb-24">
             {children}
           </div>
-        </ScrollArea>
+        </div>
       </aside>
     </>
   );

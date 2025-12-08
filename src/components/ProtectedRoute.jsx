@@ -1,45 +1,62 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuthStore } from '../stores/authStore';
-import { Loader2 } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
+import LoadingSpinner from './LoadingSpinner';
 
 /**
  * ProtectedRoute Component
- * Wraps routes that require authentication
- * Redirects to /auth if user is not authenticated
+ * Wraps routes that require authentication using Base44's built-in auth
+ * Redirects to login if user is not authenticated
  */
-export default function ProtectedRoute({ children, requireOnboarding = false, requirePremium = false }) {
+export default function ProtectedRoute({ 
+  children, 
+  requireOnboarding = false, 
+  requirePremium = false 
+}) {
   const location = useLocation();
-  const { isAuthenticated, profile, isLoading, canAccessPremium } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState(null);
 
-  // If still loading, show loading spinner
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const isAuth = await base44.auth.isAuthenticated();
+        
+        if (!isAuth) {
+          setIsLoading(false);
+          return;
+        }
+
+        const userData = await base44.auth.me();
+        setUser(userData);
+      } catch (error) {
+        console.error('Auth check error:', error);
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner fullScreen text="Loading..." />;
   }
 
-  // If not authenticated, redirect to auth page
-  if (!isAuthenticated) {
-    return <Navigate to={`/auth?redirect=${encodeURIComponent(location.pathname)}`} replace />;
+  if (!user) {
+    base44.auth.redirectToLogin(location.pathname);
+    return null;
   }
 
-  // If onboarding required but not complete, redirect to onboarding
-  if (requireOnboarding && profile && !profile.onboardingComplete) {
+  if (requireOnboarding && !user.onboarding_complete) {
     return <Navigate to="/onboarding" replace />;
   }
 
-  // If premium access required but not available, redirect to upgrade page
-  if (requirePremium && !canAccessPremium()) {
+  if (requirePremium && user.subscription_tier === 'free') {
     return <Navigate to="/upgrade" replace />;
   }
 
-  // All checks passed, render the protected content
   return children;
 }
 
@@ -49,17 +66,29 @@ export default function ProtectedRoute({ children, requireOnboarding = false, re
  * Redirects to home if user is already authenticated
  */
 export function PublicRoute({ children }) {
-  const { isAuthenticated, isLoading } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuth, setIsAuth] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const authenticated = await base44.auth.isAuthenticated();
+        setIsAuth(authenticated);
+      } catch (error) {
+        setIsAuth(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-      </div>
-    );
+    return <LoadingSpinner fullScreen />;
   }
 
-  if (isAuthenticated) {
+  if (isAuth) {
     return <Navigate to="/" replace />;
   }
 

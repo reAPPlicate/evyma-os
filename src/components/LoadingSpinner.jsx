@@ -1,5 +1,5 @@
 import { Loader2 } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn } from '@/lib/utils';
 
 /**
  * LoadingSpinner Component
@@ -20,16 +20,16 @@ export default function LoadingSpinner({
 
   const spinner = (
     <>
-      <Loader2 className={cn(sizeClasses[size], 'animate-spin text-blue-600', className)} />
+      <Loader2 className={cn(sizeClasses[size], 'animate-spin', className)} />
       {text && (
-        <p className="mt-4 text-gray-600 dark:text-gray-400">{text}</p>
+        <p className="mt-4 text-zinc-600 dark:text-zinc-400">{text}</p>
       )}
     </>
   );
 
   if (fullScreen) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-950 dark:to-zinc-900">
         {spinner}
       </div>
     );
@@ -45,7 +45,7 @@ export default function LoadingSpinner({
 export function Skeleton({ className = '', ...props }) {
   return (
     <div
-      className={cn('animate-pulse rounded-md bg-gray-200 dark:bg-gray-700', className)}
+      className={cn('animate-pulse rounded-md bg-zinc-200 dark:bg-zinc-700', className)}
       {...props}
     />
   );
@@ -57,7 +57,7 @@ export function Skeleton({ className = '', ...props }) {
  */
 export function CardSkeleton() {
   return (
-    <div className="border rounded-lg p-4 space-y-3">
+    <div className="border border-white/10 rounded-lg p-4 space-y-3 backdrop-blur-xl bg-white/5">
       <Skeleton className="h-4 w-3/4" />
       <Skeleton className="h-4 w-1/2" />
       <Skeleton className="h-20 w-full" />

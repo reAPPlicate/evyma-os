@@ -19,23 +19,16 @@ class ErrorBoundary extends React.Component {
   }
 
   static getDerivedStateFromError(error) {
-    // Update state so the next render will show the fallback UI
     return { hasError: true };
   }
 
   componentDidCatch(error, errorInfo) {
-    // Log error to console (in production, send to error tracking service like Sentry)
     console.error('ErrorBoundary caught an error:', error, errorInfo);
 
     this.setState({
       error,
       errorInfo
     });
-
-    // TODO: Send error to error tracking service (Sentry, LogRocket, etc.)
-    // if (import.meta.env.PROD) {
-    //   Sentry.captureException(error, { extra: errorInfo });
-    // }
   }
 
   handleReset = () => {
@@ -53,8 +46,8 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-          <Card className="w-full max-w-md">
+        <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-950 dark:to-zinc-900">
+          <Card className="w-full max-w-md backdrop-blur-xl bg-white/80 dark:bg-zinc-900/80 border-white/20">
             <CardHeader>
               <div className="flex items-center space-x-2 text-red-600 dark:text-red-400">
                 <AlertTriangle className="w-6 h-6" />
@@ -67,12 +60,12 @@ class ErrorBoundary extends React.Component {
 
             <CardContent>
               {import.meta.env.DEV && this.state.error && (
-                <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-4">
+                <div className="bg-zinc-100 dark:bg-zinc-800 rounded-lg p-4 mb-4">
                   <p className="text-sm font-mono text-red-600 dark:text-red-400 mb-2">
                     {this.state.error.toString()}
                   </p>
                   {this.state.errorInfo && (
-                    <details className="text-xs font-mono text-gray-600 dark:text-gray-400">
+                    <details className="text-xs font-mono text-zinc-600 dark:text-zinc-400">
                       <summary className="cursor-pointer">Stack trace</summary>
                       <pre className="mt-2 whitespace-pre-wrap">
                         {this.state.errorInfo.componentStack}
@@ -82,10 +75,10 @@ class ErrorBoundary extends React.Component {
                 </div>
               )}
 
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
                 You can try the following:
               </p>
-              <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-400 mt-2 space-y-1">
+              <ul className="list-disc list-inside text-sm text-zinc-600 dark:text-zinc-400 mt-2 space-y-1">
                 <li>Click "Try Again" to reset the error</li>
                 <li>Reload the page</li>
                 <li>If the problem persists, contact support</li>

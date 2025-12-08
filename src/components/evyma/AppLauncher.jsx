@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { GripVertical, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { base44 } from '@/api/base44Client';
 import AppIcon from './AppIcon';
+import { createPageUrl } from '@/utils';
 
 // Default apps configuration
 const DEFAULT_APPS = [
@@ -19,38 +22,74 @@ const DEFAULT_APPS = [
   { id: 'profile', label: 'Profile', icon: 'profile', route: 'Profile' },
   { id: 'billing', label: 'Billing', icon: 'billing', route: 'Billing' },
   { id: 'settings', label: 'Settings', icon: 'settings', route: null, isSettings: true },
+  { id: 'admin', label: 'Admin', icon: 'admin', route: 'Admin', adminOnly: true },
 ];
 
 /**
- * AppLauncher - Grid of app icons
+ * AppLauncher - Grid of app icons with drag-and-drop reordering
  */
-export default function AppLauncher({
+export default function AppLauncher({ 
   accentColor = '#3B82F6',
   columns = 4,
   apps,
+  onAppsReorder,
   isEditMode = false,
   onToggleEditMode,
   onOpenSettings,
   onOpenTimer,
 }) {
-  const [localApps] = useState(apps || DEFAULT_APPS);
+  const [localApps, setLocalApps] = useState(apps || DEFAULT_APPS);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      try {
+        const user = await base44.auth.me();
+        setIsAdmin(user?.role === 'admin');
+      } catch {
+        setIsAdmin(false);
+      }
+    };
+    checkAdmin();
+  }, []);
+
+  // Filter apps based on admin status
+  const visibleApps = localApps.filter(app => !app.adminOnly || isAdmin);
+
+  const handleDragEnd = (result) => {
+    if (!result.destination) return;
+    
+    const items = Array.from(localApps);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    
+    setLocalApps(items);
+    if (onAppsReorder) {
+      onAppsReorder(items);
+    }
+  };
 
   const handleAppClick = (app) => {
     if (isEditMode) return;
-
+    
     // Handle settings app specially
     if (app.isSettings && onOpenSettings) {
       onOpenSettings();
       return;
     }
-
+    
     // Handle timer app
     if (app.isTimer && onOpenTimer) {
       onOpenTimer();
       return;
     }
-
-    // For now, just log - routes will be created later
+    
+    // Navigate to route
+    if (app.route) {
+      window.location.href = createPageUrl(app.route);
+      return;
+    }
+    
     console.log('Navigate to:', app.route);
   };
 
@@ -85,41 +124,66 @@ export default function AppLauncher({
       )}
 
       {/* App Grid */}
-      <div
-        className={`
-          grid ${gridColsClass} gap-2 sm:gap-4
-          ${isEditMode ? 'animate-pulse-subtle' : ''}
-        `}
-      >
-        {localApps.map((app) => (
-          <div
-            key={app.id}
-            className="relative"
-          >
-            {/* Edit mode indicator */}
-            {isEditMode && (
-              <div
-                className="
-                  absolute -top-1 -right-1 z-10
-                  w-5 h-5 rounded-full
-                  bg-white/20 dark:bg-white/10
-                  flex items-center justify-center
-                "
-              >
-                <GripVertical className="w-3 h-3 text-white/60" />
-              </div>
-            )}
-
-            <AppIcon
-              id={app.id}
-              label={app.label}
-              icon={app.icon}
-              accentColor={accentColor}
-              onClick={() => handleAppClick(app)}
-            />
-          </div>
-        ))}
-      </div>
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <Droppable droppableId="apps" direction="horizontal">
+          {(provided) => (
+            <div
+              ref={provided.innerRef}
+              {...provided.droppableProps}
+              className={`
+                grid ${gridColsClass} gap-2 sm:gap-4
+                ${isEditMode ? 'animate-pulse-subtle' : ''}
+              `}
+            >
+              {visibleApps.map((app, index) => (
+                <Draggable 
+                  key={app.id} 
+                  draggableId={app.id} 
+                  index={index}
+                  isDragDisabled={!isEditMode}
+                >
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                      className={`
+                        relative
+                        ${isEditMode ? 'cursor-grab active:cursor-grabbing' : ''}
+                        ${snapshot.isDragging ? 'z-50' : ''}
+                      `}
+                    >
+                      {/* Edit mode indicator */}
+                      {isEditMode && (
+                        <div 
+                          className="
+                            absolute -top-1 -right-1 z-10
+                            w-5 h-5 rounded-full
+                            bg-white/20 dark:bg-white/10
+                            flex items-center justify-center
+                          "
+                        >
+                          <GripVertical className="w-3 h-3 text-white/60" />
+                        </div>
+                      )}
+                      
+                      <AppIcon
+                        id={app.id}
+                        label={app.label}
+                        icon={app.icon}
+                        accentColor={accentColor}
+                        onClick={() => handleAppClick(app)}
+                        isDragging={snapshot.isDragging}
+                      />
+                    </div>
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
     </div>
   );
 }
