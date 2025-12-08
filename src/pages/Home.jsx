@@ -1,98 +1,67 @@
 import React, { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
 
 import Dock from '../components/evyma/Dock';
 import Drawer from '../components/evyma/Drawer';
 import AppLauncher from '../components/evyma/AppLauncher';
-import FocusTimer from '../components/evyma/FocusTimer';
-import { Bell, Check, Columns3, Columns4, Timer } from 'lucide-react';
+import DynamicFeed from '../components/evyma/DynamicFeed';
+import EvymaInsights from '../components/evyma/EvymaInsights';
+import { useTheme, THEMES } from '@/components/theme/ThemeContext';
+import { Check, Columns3, Columns4 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
-/**
- * Home - Evyma's native mobile-style home screen
- */
-
-// Theme options
-const THEMES = [
-  { id: 'blue', color: '#3B82F6' },
-  { id: 'indigo', color: '#6366F1' },
-  { id: 'cyan', color: '#06B6D4' },
-  { id: 'teal', color: '#14B8A6' },
-  { id: 'green', color: '#22C55E' },
-  { id: 'purple', color: '#8B5CF6' },
-  { id: 'amber', color: '#F59E0B' },
-  { id: 'orange', color: '#F97316' },
-  { id: 'red', color: '#EF4444' },
-  { id: 'rose', color: '#F43F5E' },
-  { id: 'pink', color: '#EC4899' },
-  { id: 'neutral', color: '#71717A' },
-];
-
-// Helper to generate theme gradient classes from color ID
-const getThemeGradients = (themeId) => {
-  const gradientMap = {
-    blue: { gradientFrom: 'from-blue-600/20', gradientVia: 'via-blue-900/10', lightGradientFrom: 'from-blue-100', lightGradientVia: 'via-blue-50/50' },
-    indigo: { gradientFrom: 'from-indigo-600/20', gradientVia: 'via-indigo-900/10', lightGradientFrom: 'from-indigo-100', lightGradientVia: 'via-indigo-50/50' },
-    cyan: { gradientFrom: 'from-cyan-600/20', gradientVia: 'via-cyan-900/10', lightGradientFrom: 'from-cyan-100', lightGradientVia: 'via-cyan-50/50' },
-    teal: { gradientFrom: 'from-teal-600/20', gradientVia: 'via-teal-900/10', lightGradientFrom: 'from-teal-100', lightGradientVia: 'via-teal-50/50' },
-    green: { gradientFrom: 'from-green-600/20', gradientVia: 'via-green-900/10', lightGradientFrom: 'from-green-100', lightGradientVia: 'via-green-50/50' },
-    purple: { gradientFrom: 'from-purple-600/20', gradientVia: 'via-purple-900/10', lightGradientFrom: 'from-purple-100', lightGradientVia: 'via-purple-50/50' },
-    amber: { gradientFrom: 'from-amber-600/20', gradientVia: 'via-amber-900/10', lightGradientFrom: 'from-amber-100', lightGradientVia: 'via-amber-50/50' },
-    orange: { gradientFrom: 'from-orange-600/20', gradientVia: 'via-orange-900/10', lightGradientFrom: 'from-orange-100', lightGradientVia: 'via-orange-50/50' },
-    red: { gradientFrom: 'from-red-600/20', gradientVia: 'via-red-900/10', lightGradientFrom: 'from-red-100', lightGradientVia: 'via-red-50/50' },
-    rose: { gradientFrom: 'from-rose-600/20', gradientVia: 'via-rose-900/10', lightGradientFrom: 'from-rose-100', lightGradientVia: 'via-rose-50/50' },
-    pink: { gradientFrom: 'from-pink-600/20', gradientVia: 'via-pink-900/10', lightGradientFrom: 'from-pink-100', lightGradientVia: 'via-pink-50/50' },
-    neutral: { gradientFrom: 'from-zinc-600/20', gradientVia: 'via-zinc-900/10', lightGradientFrom: 'from-zinc-200', lightGradientVia: 'via-zinc-100/50' },
-  };
-  return { ...gradientMap[themeId], gradientTo: 'to-transparent' };
-};
-
 export default function Home() {
-    const [isDarkMode, setIsDarkMode] = useState(true);
-    const [activeTheme, setActiveTheme] = useState('blue');
-    const [notificationsOpen, setNotificationsOpen] = useState(false);
+    const { isDarkMode, setIsDarkMode, activeTheme, setActiveTheme, theme } = useTheme();
     const [settingsOpen, setSettingsOpen] = useState(false);
-    const [timerOpen, setTimerOpen] = useState(false);
     const [gridColumns, setGridColumns] = useState(4);
     const [isEditMode, setIsEditMode] = useState(false);
     const [appOrder, setAppOrder] = useState(null);
-  const [isAppsVisible, setIsAppsVisible] = useState(true);
+    const [isAppsVisible, setIsAppsVisible] = useState(true);
+    const [authChecked, setAuthChecked] = useState(false);
 
-  const currentTheme = THEMES.find(t => t.id === activeTheme) || THEMES[0];
-  const theme = { accent: currentTheme.color, ...getThemeGradients(activeTheme) };
-
+  // Auth check
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [isDarkMode]);
+    const checkAuth = async () => {
+      try {
+        const isAuth = await base44.auth.isAuthenticated();
+        if (!isAuth) {
+          base44.auth.redirectToLogin('/Home');
+          return;
+        }
+        setAuthChecked(true);
+      } catch {
+        base44.auth.redirectToLogin('/Home');
+      }
+    };
+    checkAuth();
+  }, []);
+
+  if (!authChecked) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-zinc-950' : 'bg-zinc-100'}`}>
+        <div 
+          className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin"
+          style={{ borderColor: theme.accent, borderTopColor: 'transparent' }}
+        />
+      </div>
+    );
+  }
 
   const handleDockAction = (action) => {
     console.log('Dock action:', action);
   };
 
+  const handleAppsReorder = (newOrder) => {
+    setAppOrder(newOrder);
+    // TODO: Persist to user entity
+    console.log('New app order:', newOrder);
+  };
+
   return (
-    <div className={`
-      min-h-screen
-      transition-colors duration-500 ease-out
-      ${isDarkMode ? 'bg-zinc-950' : 'bg-zinc-100'}
-    `}>
-      {/* Background Gradient Layer */}
-      <div 
-        className={`
-          fixed inset-0 pointer-events-none
-          transition-opacity duration-700 ease-out
-          ${isDarkMode 
-            ? `bg-gradient-to-br ${theme.gradientFrom} ${theme.gradientVia} ${theme.gradientTo}` 
-            : `bg-gradient-to-br ${theme.lightGradientFrom} ${theme.lightGradientVia} to-white`
-          }
-        `} 
-        aria-hidden="true"
-      />
+    <div className="relative">{/* Home content only - Layout handles background/dock */}
       
 
 
@@ -111,57 +80,39 @@ export default function Home() {
         aria-label="Home screen"
       >
         <div className="max-w-lg mx-auto">
-          {isAppsVisible && (
+          {isAppsVisible ? (
             <AppLauncher
               accentColor={theme.accent}
               columns={gridColumns}
               apps={appOrder}
+              onAppsReorder={handleAppsReorder}
               isEditMode={isEditMode}
               onToggleEditMode={() => setIsEditMode(!isEditMode)}
               onOpenSettings={() => setSettingsOpen(true)}
               onOpenTimer={() => setTimerOpen(true)}
             />
+          ) : (
+            <DynamicFeed accentColor={theme.accent} />
           )}
         </div>
       </main>
 
-      {/* Dock */}
+      {/* Evyma Insights - Sticky above dock when feed is visible */}
+      {!isAppsVisible && (
+        <div className="fixed bottom-36 sm:bottom-40 md:bottom-44 left-0 right-0 z-[130] px-4">
+          <div className="max-w-lg mx-auto">
+            <EvymaInsights accentColor={theme.accent} />
+          </div>
+        </div>
+      )}
+
+      {/* Home-specific Dock integration */}
       <Dock 
         accentColor={theme.accent} 
         onAction={handleDockAction}
-        onOpenNotifications={() => setNotificationsOpen(true)}
         isAppsVisible={isAppsVisible}
         onToggleAppsVisibility={() => setIsAppsVisible(!isAppsVisible)}
       />
-
-      {/* Notifications Drawer */}
-      <Drawer
-        isOpen={notificationsOpen}
-        onClose={() => setNotificationsOpen(false)}
-        side="top"
-        title="Notifications"
-      >
-        <div className="space-y-4">
-          <div className="text-center py-12">
-            <Bell className="w-12 h-12 mx-auto mb-4 text-white/20" aria-hidden="true" />
-            <p className="text-white/40 text-sm">No notifications yet</p>
-          </div>
-        </div>
-      </Drawer>
-
-      {/* Focus Timer Drawer */}
-      <Drawer
-        isOpen={timerOpen}
-        onClose={() => setTimerOpen(false)}
-        side="top"
-        title="Focus Timer"
-      >
-        <FocusTimer 
-          accentColor={theme.accent}
-          isOpen={timerOpen}
-          onClose={() => setTimerOpen(false)}
-        />
-      </Drawer>
 
       {/* Settings Drawer */}
       <Drawer
@@ -337,8 +288,6 @@ export default function Home() {
           </section>
         </div>
       </Drawer>
-
-
     </div>
   );
 }
