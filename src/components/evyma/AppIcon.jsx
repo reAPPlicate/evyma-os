@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   Settings, User, Calendar, Target, Flag, 
   BarChart3, CreditCard, Gift, Repeat, Heart,
-  BookOpen, Bell, Compass, Zap, Star, Timer
+  BookOpen, Bell, Compass, Zap, Star, Timer, Shield
 } from 'lucide-react';
 
 // Icon mapping
@@ -23,6 +23,7 @@ const ICON_MAP = {
   energy: Zap,
   favorites: Star,
   timer: Timer,
+  admin: Shield,
 };
 
 /**

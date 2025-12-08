@@ -14,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { hexToRgb } from '@/lib/utils';
 
 /**
  * FocusTimer - Integrated timer with multiple modes, techniques, and session tracking
@@ -61,6 +60,11 @@ export default function FocusTimer({
   const oscillatorRef = useRef(null);
   const gainNodeRef = useRef(null);
 
+  // Convert hex to rgb
+  const hexToRgb = (hex) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '59, 130, 246';
+  };
   const accentRgb = hexToRgb(accentColor);
 
   const techniques = {
