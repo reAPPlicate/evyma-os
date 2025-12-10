@@ -16,6 +16,7 @@ const DEFAULT_APPS = [
   { id: 'courses', label: 'Courses', icon: 'courses', route: 'Courses' },
   { id: 'community', label: 'Community', icon: 'community', route: 'Community' },
   { id: 'billing', label: 'Billing', icon: 'billing', route: 'Billing' },
+  { id: 'profile', label: 'Profile', icon: 'user', route: 'Profile' },
   { id: 'settings', label: 'Settings', icon: 'settings', route: 'Settings' },
   { id: 'admin', label: 'Admin', icon: 'admin', route: 'Admin', adminOnly: true },
 ];
