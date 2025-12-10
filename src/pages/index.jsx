@@ -12,8 +12,6 @@ import Habits from "./Habits";
 
 import Dashboard from "./Dashboard";
 
-import Billing from "./Billing";
-
 import Feed from "./Feed";
 
 import Courses from "./Courses";
@@ -23,6 +21,16 @@ import Journal from "./Journal";
 import Community from "./Community";
 
 import Settings from "./Settings";
+
+import Profile from "./Profile";
+
+import Billing from "./Billing";
+
+import PaymentSuccess from "./PaymentSuccess";
+
+import payment-success from "./payment-success";
+
+import NotFound from "./NotFound";
 
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 
@@ -40,8 +48,6 @@ const PAGES = {
     
     Dashboard: Dashboard,
     
-    Billing: Billing,
-    
     Feed: Feed,
     
     Courses: Courses,
@@ -51,6 +57,16 @@ const PAGES = {
     Community: Community,
     
     Settings: Settings,
+    
+    Profile: Profile,
+    
+    Billing: Billing,
+    
+    PaymentSuccess: PaymentSuccess,
+    
+    payment-success: payment-success,
+    
+    NotFound: NotFound,
     
 }
 
@@ -91,8 +107,6 @@ function PagesContent() {
                 
                 <Route path="/Dashboard" element={<Dashboard />} />
                 
-                <Route path="/Billing" element={<Billing />} />
-                
                 <Route path="/Feed" element={<Feed />} />
                 
                 <Route path="/Courses" element={<Courses />} />
@@ -102,6 +116,16 @@ function PagesContent() {
                 <Route path="/Community" element={<Community />} />
                 
                 <Route path="/Settings" element={<Settings />} />
+                
+                <Route path="/Profile" element={<Profile />} />
+                
+                <Route path="/Billing" element={<Billing />} />
+                
+                <Route path="/PaymentSuccess" element={<PaymentSuccess />} />
+                
+                <Route path="/payment-success" element={<payment-success />} />
+                
+                <Route path="/NotFound" element={<NotFound />} />
                 
             </Routes>
         </Layout>

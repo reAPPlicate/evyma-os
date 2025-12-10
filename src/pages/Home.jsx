@@ -1,26 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import toast from 'react-hot-toast';
 
 import Dock from '../components/evyma/Dock';
 import Drawer from '../components/evyma/Drawer';
 import AppLauncher from '../components/evyma/AppLauncher';
 import DynamicFeed from '../components/evyma/DynamicFeed';
 import EvymaInsights from '../components/evyma/EvymaInsights';
+import FocusTimer from '../components/evyma/FocusTimer';
 import { useTheme, THEMES } from '@/components/theme/ThemeContext';
-import { Check, Columns3, Columns4 } from 'lucide-react';
+import { Check, Columns3, Columns4, Clock } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Button } from '@/components/ui/button';
 
 export default function Home() {
     const { isDarkMode, setIsDarkMode, activeTheme, setActiveTheme, theme } = useTheme();
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const [timerOpen, setTimerOpen] = useState(false);
     const [gridColumns, setGridColumns] = useState(4);
     const [isEditMode, setIsEditMode] = useState(false);
     const [appOrder, setAppOrder] = useState(null);
     const [isAppsVisible, setIsAppsVisible] = useState(true);
     const [authChecked, setAuthChecked] = useState(false);
+    const [currentTime, setCurrentTime] = useState(new Date());
 
   // Auth check
   useEffect(() => {
@@ -38,6 +43,16 @@ export default function Home() {
     };
     checkAuth();
   }, []);
+
+  // Update time every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+
 
   if (!authChecked) {
     return (
@@ -60,11 +75,40 @@ export default function Home() {
     console.log('New app order:', newOrder);
   };
 
+  const formatTime = (date) => {
+    return date.toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit',
+      hour12: true 
+    });
+  };
+
   return (
     <div className="relative">{/* Home content only - Layout handles background/dock */}
       
-
-
+      {/* Time Widget - Top Center */}
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[120]">
+        <Button
+          onClick={() => setTimerOpen(true)}
+          variant="ghost"
+          className="
+            px-4 py-2 h-auto
+            rounded-full backdrop-blur-xl
+            bg-white/10 hover:bg-white/20
+            border border-white/10
+            text-white/90 hover:text-white
+            transition-all duration-200
+            hover:scale-105 active:scale-95
+            min-h-[44px] min-w-[100px]
+          "
+          style={{ 
+            boxShadow: `0 4px 20px rgba(${theme.accent.replace('#', '')}, 0.15)` 
+          }}
+        >
+          <Clock className="w-4 h-4 mr-2" style={{ color: theme.accent }} />
+          <span className="font-mono text-sm">{formatTime(currentTime)}</span>
+        </Button>
+      </div>
 
 
       {/* Main Content Area */}
@@ -287,6 +331,20 @@ export default function Home() {
             </div>
           </section>
         </div>
+      </Drawer>
+
+      {/* Focus Timer Drawer */}
+      <Drawer
+        isOpen={timerOpen}
+        onClose={() => setTimerOpen(false)}
+        side="top"
+        title="Focus Timer"
+      >
+        <FocusTimer 
+          accentColor={theme.accent}
+          isOpen={timerOpen}
+          onClose={() => setTimerOpen(false)}
+        />
       </Drawer>
     </div>
   );

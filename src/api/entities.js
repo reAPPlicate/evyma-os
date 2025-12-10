@@ -17,6 +17,8 @@ export const RealtimeSession = base44.entities.RealtimeSession;
 
 export const Subscription = base44.entities.Subscription;
 
+export const UserProfile = base44.entities.UserProfile;
+
 
 
 // auth sdk:

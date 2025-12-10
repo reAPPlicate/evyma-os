@@ -1,293 +1,227 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { CreditCard, Calendar, Shield, Sparkles, Loader, ExternalLink, CheckCircle2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useTheme } from '@/components/theme/ThemeContext';
 import GlassCard from '@/components/theme/GlassCard';
-import { Button } from '@/components/ui/button';
-import { format } from 'date-fns';
-import toast from 'react-hot-toast';
+import { CreditCard, Check, Loader2, Calendar, DollarSign } from 'lucide-react';
 
 export default function Billing() {
-  const { isDarkMode, theme } = useTheme();
-  const queryClient = useQueryClient();
-  const accentColor = theme.accent;
+  const { theme, isDarkMode } = useTheme();
   const [loading, setLoading] = useState(false);
+  const [selectedPrice, setSelectedPrice] = useState(null);
 
-  // Fetch current user and subscription
-  const { data: user } = useQuery({
-    queryKey: ['user'],
-    queryFn: () => base44.auth.me(),
-  });
-
-  const { data: subscription } = useQuery({
-    queryKey: ['subscription'],
+  const { data: productsData } = useQuery({
+    queryKey: ['billing-products'],
     queryFn: async () => {
-      if (!user?.id) return null;
-      const subs = await base44.entities.Subscription.filter({ created_by: user.email }, '-created_date', 1);
-      return subs[0] || null;
-    },
-    enabled: !!user,
+      const { data } = await base44.functions.invoke('listStripeProducts');
+      return data;
+    }
   });
 
-  // Open Stripe Checkout for upgrade
-  const handleUpgrade = async () => {
-    setLoading(true);
-    try {
-      const response = await base44.functions.invoke('createCheckoutSession', {
-        tier: 'premium'
+  const { data: subscription, refetch: refetchSubscription } = useQuery({
+    queryKey: ['user-subscription'],
+    queryFn: async () => {
+      const user = await base44.auth.me();
+      const subs = await base44.entities.Subscription.filter({ 
+        user_id: user.id 
       });
-      
-      if (response.data.url) {
-        window.location.href = response.data.url;
-      } else {
-        toast.error('Failed to create checkout session');
-      }
+      return subs[0] || null;
+    }
+  });
+
+  const handleCheckout = async (priceId) => {
+    setLoading(true);
+    setSelectedPrice(priceId);
+    try {
+      const { data } = await base44.functions.invoke('createCheckoutSession', { 
+        priceId 
+      });
+      window.location.href = data.url;
     } catch (error) {
-      toast.error('Error creating checkout session');
-    } finally {
+      console.error('Checkout error:', error);
       setLoading(false);
+      setSelectedPrice(null);
     }
   };
 
-  // Open Stripe Customer Portal
   const handleManageSubscription = async () => {
     setLoading(true);
     try {
-      const response = await base44.functions.invoke('createPortalSession', {});
-      
-      if (response.data.url) {
-        window.location.href = response.data.url;
-      } else {
-        toast.error('Failed to open customer portal');
-      }
+      const { data } = await base44.functions.invoke('createCustomerPortalSession');
+      window.location.href = data.url;
     } catch (error) {
-      toast.error('Error opening customer portal');
-    } finally {
+      console.error('Portal error:', error);
       setLoading(false);
     }
   };
 
-  const currentTier = subscription?.tier || 'free';
-  const isActive = subscription?.status === 'active' || subscription?.status === 'trialing';
-  const isPremium = currentTier === 'premium' && isActive;
+  const formatPrice = (amount, currency) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency.toUpperCase()
+    }).format(amount / 100);
+  };
 
-  const tiers = [
-    {
-      id: 'free',
-      name: 'Free',
-      price: '$0',
-      description: 'Get started with Evyma',
-      features: [
-        '5 coaching sessions per month',
-        'Basic habit tracking',
-        'Goal setting',
-        'Weekly insights'
-      ]
-    },
-    {
-      id: 'premium',
-      name: 'Premium',
-      price: '$29',
-      period: '/month',
-      description: 'Unlock your full potential',
-      features: [
-        'Unlimited coaching sessions',
-        'Advanced habit analytics',
-        'Personalized AI insights',
-        'Priority support',
-        'Custom coaching characters',
-        'Export & share progress'
-      ],
-      popular: true
+  const formatInterval = (recurring) => {
+    if (!recurring) return '';
+    const { interval, interval_count } = recurring;
+    if (interval_count === 1) return interval;
+    return `${interval_count} ${interval}s`;
+  };
+
+  const getSubscriptionDetails = () => {
+    if (!subscription || !productsData) return null;
+    
+    for (const { product, prices } of productsData.products) {
+      const matchingPrice = prices.find(p => p.id === subscription.stripe_price_id);
+      if (matchingPrice) {
+        return {
+          product,
+          price: matchingPrice
+        };
+      }
     }
-  ];
+    return null;
+  };
+
+  const subscriptionDetails = getSubscriptionDetails();
+  const activeProducts = productsData?.products?.filter(p => p.product.active) || [];
 
   return (
-    <div className="min-h-screen p-6 pb-32">
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <div 
-            className="w-16 h-16 rounded-3xl flex items-center justify-center"
-            style={{ backgroundColor: `${accentColor}20` }}
-          >
-            <CreditCard className="w-8 h-8" style={{ color: accentColor }} />
-          </div>
+    <div className={`min-h-screen p-6 ${isDarkMode ? 'bg-zinc-950' : 'bg-zinc-100'}`}>
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-zinc-900'}`}>
-              Billing & Subscription
-            </h1>
-            <p className={`text-sm ${isDarkMode ? 'text-white/60' : 'text-zinc-500'}`}>
-              Manage your plan and payment details
-            </p>
+            <h1 className="text-3xl font-bold text-white mb-2">Billing & Subscription</h1>
+            <p className="text-white/60">Choose a plan that fits your needs</p>
           </div>
+          {subscription && subscription.stripe_customer_id && (
+            <Button 
+              onClick={handleManageSubscription}
+              disabled={loading}
+              variant="outline"
+              className="border-white/10 text-white"
+            >
+              Manage Subscription
+            </Button>
+          )}
         </div>
 
-        {/* Current Subscription Status */}
-        {subscription && (
-          <GlassCard className="p-5">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Shield className="w-5 h-5" style={{ color: accentColor }} />
-                <h2 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-zinc-900'}`}>
-                  Current Plan
-                </h2>
-              </div>
-              <span 
-                className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  isActive 
-                    ? 'bg-green-500/20 text-green-400' 
-                    : 'bg-yellow-500/20 text-yellow-400'
-                }`}
-              >
-                {subscription.status}
-              </span>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className={`text-sm ${isDarkMode ? 'text-white/70' : 'text-zinc-600'}`}>
-                  Tier
-                </span>
-                <span className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-zinc-900'}`}>
-                  {currentTier.charAt(0).toUpperCase() + currentTier.slice(1)}
-                </span>
-              </div>
-
-              {subscription.current_period_end && (
-                <div className="flex items-center justify-between">
-                  <span className={`text-sm ${isDarkMode ? 'text-white/70' : 'text-zinc-600'}`}>
-                    {subscription.status === 'trialing' ? 'Trial Ends' : 'Next Billing Date'}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" style={{ color: accentColor }} />
-                    <span className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-zinc-900'}`}>
-                      {format(new Date(subscription.current_period_end), 'MMM d, yyyy')}
-                    </span>
+        {subscription && subscriptionDetails && (
+          <GlassCard className="p-6 mb-8">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-4">
+                <div 
+                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ backgroundColor: `${theme.accent}20` }}
+                >
+                  <CreditCard className="w-6 h-6" style={{ color: theme.accent }} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-xl font-semibold text-white">
+                      {subscriptionDetails.product.name}
+                    </h3>
+                    <Badge 
+                      className={
+                        subscription.status === 'active' 
+                          ? 'bg-green-500/20 text-green-400' 
+                          : subscription.status === 'trialing'
+                          ? 'bg-blue-500/20 text-blue-400'
+                          : 'bg-yellow-500/20 text-yellow-400'
+                      }
+                    >
+                      {subscription.status}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-4 mt-2 text-white/60 text-sm">
+                    <div className="flex items-center gap-1.5">
+                      <DollarSign className="w-4 h-4" />
+                      <span>
+                        {formatPrice(subscriptionDetails.price.unit_amount, subscriptionDetails.price.currency)}
+                        /{formatInterval(subscriptionDetails.price.recurring)}
+                      </span>
+                    </div>
+                    {subscription.current_period_end && (
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="w-4 h-4" />
+                        <span>
+                          Renews {new Date(subscription.current_period_end).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
-              )}
-
-              {subscription.cancel_at_period_end && (
-                <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-                  <p className="text-sm text-yellow-400">
-                    Your subscription will be canceled at the end of the current billing period.
-                  </p>
-                </div>
-              )}
+              </div>
             </div>
-
-            {isPremium && (
-              <Button
-                onClick={handleManageSubscription}
-                disabled={loading}
-                variant="outline"
-                className="w-full mt-4"
-              >
-                {loading ? (
-                  <Loader className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                )}
-                Manage Subscription
-              </Button>
-            )}
           </GlassCard>
         )}
 
-        {/* Pricing Tiers */}
-        <div className="grid md:grid-cols-2 gap-4">
-          {tiers.map((tier) => {
-            const isCurrentTier = tier.id === currentTier;
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {activeProducts.map(({ product, prices }) => {
+            const isCurrentProduct = subscription?.stripe_product_id === product.id;
             
             return (
               <GlassCard 
-                key={tier.id}
-                className={`p-5 relative ${tier.popular ? 'ring-2' : ''}`}
-                style={{ borderColor: tier.popular ? accentColor : undefined }}
+                key={product.id} 
+                className={`p-6 ${isCurrentProduct ? 'ring-2' : ''}`}
+                style={isCurrentProduct ? { ringColor: theme.accent } : {}}
               >
-                {tier.popular && (
-                  <div 
-                    className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-semibold text-white"
-                    style={{ backgroundColor: accentColor }}
-                  >
-                    Popular
-                  </div>
-                )}
-
-                <div className="mb-4">
-                  <h3 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-zinc-900'}`}>
-                    {tier.name}
-                  </h3>
-                  <p className={`text-sm ${isDarkMode ? 'text-white/60' : 'text-zinc-500'}`}>
-                    {tier.description}
-                  </p>
-                </div>
-
-                <div className="mb-4">
-                  <span className={`text-4xl font-bold ${isDarkMode ? 'text-white' : 'text-zinc-900'}`}>
-                    {tier.price}
-                  </span>
-                  {tier.period && (
-                    <span className={`text-sm ${isDarkMode ? 'text-white/60' : 'text-zinc-500'}`}>
-                      {tier.period}
-                    </span>
+                <div className="flex items-start justify-between mb-2">
+                  <h3 className="text-xl font-bold text-white">{product.name}</h3>
+                  {isCurrentProduct && (
+                    <Badge style={{ backgroundColor: `${theme.accent}20`, color: theme.accent }}>
+                      Current
+                    </Badge>
                   )}
                 </div>
-
-                <div className="space-y-2 mb-6">
-                  {tier.features.map((feature, idx) => (
-                    <div key={idx} className="flex items-start gap-2">
-                      <CheckCircle2 
-                        className="w-4 h-4 mt-0.5 flex-shrink-0" 
-                        style={{ color: accentColor }} 
-                      />
-                      <span className={`text-sm ${isDarkMode ? 'text-white/70' : 'text-zinc-600'}`}>
-                        {feature}
-                      </span>
-                    </div>
-                  ))}
+                {product.description && (
+                  <p className="text-white/60 text-sm mb-4">{product.description}</p>
+                )}
+                
+                <div className="space-y-3 mb-6">
+                  {prices.filter(p => p.active).map((price) => {
+                    const isCurrentPrice = subscription?.stripe_price_id === price.id;
+                    
+                    return (
+                      <div key={price.id} className="flex items-center justify-between">
+                        <div>
+                          <p className="text-white font-semibold">
+                            {formatPrice(price.unit_amount, price.currency)}
+                          </p>
+                          <p className="text-white/60 text-xs">
+                            per {formatInterval(price.recurring)}
+                          </p>
+                        </div>
+                        <Button
+                          onClick={() => handleCheckout(price.id)}
+                          disabled={loading || isCurrentPrice}
+                          size="sm"
+                          style={isCurrentPrice ? {} : { backgroundColor: theme.accent }}
+                          variant={isCurrentPrice ? 'outline' : 'default'}
+                          className={isCurrentPrice ? 'border-white/10 text-white/40' : 'text-white'}
+                        >
+                          {isCurrentPrice ? (
+                            <>
+                              <Check className="w-4 h-4 mr-1" />
+                              Active
+                            </>
+                          ) : loading && selectedPrice === price.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            'Select'
+                          )}
+                        </Button>
+                      </div>
+                    );
+                  })}
                 </div>
-
-                {isCurrentTier ? (
-                  <Button
-                    disabled
-                    variant="outline"
-                    className="w-full"
-                  >
-                    Current Plan
-                  </Button>
-                ) : tier.id === 'premium' ? (
-                  <Button
-                    onClick={handleUpgrade}
-                    disabled={loading}
-                    className="w-full text-white"
-                    style={{ backgroundColor: accentColor }}
-                  >
-                    {loading ? (
-                      <Loader className="w-4 h-4 animate-spin mr-2" />
-                    ) : (
-                      <Sparkles className="w-4 h-4 mr-2" />
-                    )}
-                    Upgrade to Premium
-                  </Button>
-                ) : null}
               </GlassCard>
             );
           })}
         </div>
-
-        {/* Additional Info */}
-        <GlassCard className="p-5">
-          <h3 className={`text-sm font-semibold mb-3 ${isDarkMode ? 'text-white' : 'text-zinc-900'}`}>
-            Payment Security
-          </h3>
-          <p className={`text-sm ${isDarkMode ? 'text-white/60' : 'text-zinc-500'}`}>
-            All payments are securely processed through Stripe. We never store your payment information.
-            You can cancel your subscription at any time from the customer portal.
-          </p>
-        </GlassCard>
       </div>
     </div>
   );

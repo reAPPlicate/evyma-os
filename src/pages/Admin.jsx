@@ -19,7 +19,8 @@ import {
   PieChart,
   Target,
   Calculator,
-  Cpu
+  Cpu,
+  Tag
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -36,7 +37,9 @@ import FinancialsCohort from '@/components/admin/financials/FinancialsCohort';
 import FinancialsTierProfitability from '@/components/admin/financials/FinancialsTierProfitability';
 import FinancialsForecasting from '@/components/admin/financials/FinancialsForecasting';
 import FinancialsCACManagement from '@/components/admin/financials/FinancialsCACManagement';
-import AdminProducts from '@/components/admin/AdminProducts';
+import AdminStripeProducts from '@/components/admin/AdminStripeProducts';
+import AdminStripeCustomers from '@/components/admin/AdminStripeCustomers';
+import AdminPromotions from '@/components/admin/AdminPromotions';
 import AdminUsers from '@/components/admin/AdminUsers';
 import AdminSiteManagement from '@/components/admin/AdminSiteManagement';
 import AdminOpenAICosts from '@/components/admin/AdminOpenAICosts';
@@ -59,6 +62,8 @@ const TABS = [
     ]
   },
   { id: 'products', label: 'Products & Pricing', icon: Package },
+  { id: 'customers', label: 'Customers & Subscriptions', icon: Users },
+  { id: 'promotions', label: 'Promotions & Coupons', icon: Tag },
   { id: 'users', label: 'User Management', icon: Users },
   { id: 'site', label: 'Site Management', icon: Settings },
   { id: 'openai-costs', label: 'OpenAI Costs', icon: Cpu },
@@ -138,7 +143,11 @@ function AdminContent() {
       case 'financials-cac':
         return <FinancialsCACManagement />;
       case 'products':
-        return <AdminProducts />;
+        return <AdminStripeProducts />;
+      case 'customers':
+        return <AdminStripeCustomers />;
+      case 'promotions':
+        return <AdminPromotions />;
       case 'users':
         return <AdminUsers />;
       case 'site':
@@ -179,7 +188,17 @@ function AdminContent() {
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         <div className={`flex items-center justify-between p-4 border-b ${isDarkMode ? 'border-white/10' : 'border-zinc-200/50'}`}>
-          <h1 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-zinc-900'}`}>Admin Panel</h1>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              className={`${isDarkMode ? 'text-white/70 hover:text-white hover:bg-white/10' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50'}`}
+              onClick={() => navigate(createPageUrl('Home'))}
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <h1 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-zinc-900'}`}>Admin Panel</h1>
+          </div>
           <Button 
             variant="ghost" 
             size="icon" 
@@ -267,23 +286,6 @@ function AdminContent() {
             );
           })}
         </nav>
-
-        <div className="absolute bottom-4 left-4 right-4">
-          <Button 
-            variant="outline" 
-            className={`
-              w-full gap-2
-              ${isDarkMode 
-                ? 'border-white/20 text-white/70 hover:text-white hover:bg-white/10' 
-                : 'border-zinc-300 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
-              }
-            `}
-            onClick={() => navigate(createPageUrl('Home'))}
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to App
-          </Button>
-        </div>
       </aside>
 
       {/* Main Content */}
